@@ -37,6 +37,9 @@ class Network(object):
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
+        self.beta = 0.9
+        self.epsilon = 0.00001
+        self.g2 = 0
 
     def feedforward(self, a):
         """Return the output of the network if ``a`` is input."""
@@ -85,10 +88,14 @@ class Network(object):
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [w-(eta/len(mini_batch))*nw
-                        for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b-(eta/len(mini_batch))*nb
-                       for b, nb in zip(self.biases, nabla_b)]
+
+        nw2 = np.sum([np.sum(np.power(nw,2)) for nw in nabla_w])
+        self.g2 = self.beta*self.g2 + ((1-self.beta)*nw2)
+
+        self.weights = [w-(eta/len(mini_batch))/(np.sqrt(self.g2)+self.epsilon)*nw
+                            for w, nw in zip(self.weights, nabla_w)] #Primer cambio para implementar RMS prorp: Se agrega g y epsilon.
+
+        self.biases = [b-(eta/len(mini_batch))*nb for b, nb in zip(self.biases, nabla_b)]
 
     def backprop(self, x, y):
         """Return a tuple ``(nabla_b, nabla_w)`` representing the
